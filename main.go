@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/sha1"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -37,7 +38,11 @@ type Event struct {
 }
 
 func (e Event) String() string {
-	return fmt.Sprintf("%s -- %s, %s", e.Name, e.Time, e.Url)
+	b, err := json.Marshal(e)
+	if err != nil {
+		log.Fatalf("Could not marshal event: %s", err.Error())
+	}
+	return string(b)
 }
 
 var month = time.Now().Month().String()
@@ -128,8 +133,8 @@ func main() {
 					Instrument: htmlquery.FindOne(artistInfo, `//p[contains(@class, "mini-artist-info__instrument")]`).FirstChild.Data,
 					Bio:        htmlquery.FindOne(artistInfo, `//p[contains(@class, "mini-artist-info__bio")]`).FirstChild.Data,
 				}
-				log.Println("Musician =", m)
 				event.Musicians = append(event.Musicians, m)
+				log.Println(event)
 			}
 		}
 	}
