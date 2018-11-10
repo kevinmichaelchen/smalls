@@ -1,0 +1,8 @@
+github.com/antchfx/htmlquery v0.0.0-20180925020018-98389addba3d h1:BzVCjAnYYfpdD01lzVKlZ8mCJu+l4IdGGHjye+R8qgQ=
+github.com/antchfx/htmlquery v0.0.0-20180925020018-98389addba3d/go.mod h1:MS9yksVSQXls00iXkiMqXr0J+umL/AmxXKuP28SUJM8=
+github.com/antchfx/xpath v0.0.0-20180922041825-3de91f3991a1 h1:nt4RMjvM9pJ5HR7WkCeAnDz1pgHbLT2vxICalUTWcJU=
+github.com/antchfx/xpath v0.0.0-20180922041825-3de91f3991a1/go.mod h1:Yee4kTMuNiPYJ7nSNorELQMr1J33uOpXDMByNYhvtNk=
+golang.org/x/net v0.0.0-20181108082009-03003ca0c849 h1:FSqE2GGG7wzsYUsWiQ8MZrvEd1EOyU3NCF0AW3Wtltg=
+golang.org/x/net v0.0.0-20181108082009-03003ca0c849/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
+golang.org/x/text v0.3.0 h1:g61tztE5qeGQ89tm6NTjjM9VPIm088od1l6aSorWRWg=
+golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
