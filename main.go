@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/sha1"
+	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -13,12 +15,25 @@ import (
 	"github.com/antchfx/htmlquery"
 )
 
+const CacheDirectory = "cache"
+const BaseUrl = "https://www.smallslive.com"
 const SmallsCalendarUrl = "https://www.smallslive.com/events/calendar/"
 
+type Musician struct {
+	Name       string
+	Instrument string
+	Bio        string
+}
+
+func (m Musician) String() string {
+	return fmt.Sprintf("%s - %s - %s", m.Name, m.Instrument, m.Bio)
+}
+
 type Event struct {
-	Name string
-	Time string
-	Url  string
+	Name      string
+	Time      string
+	Url       string
+	Musicians []Musician
 }
 
 func (e Event) String() string {
@@ -28,48 +43,57 @@ func (e Event) String() string {
 var month = time.Now().Month().String()
 
 // TODO schedule only shows 2 weeks at a time. name should be something like 11-10-2018_11-23-2018.html
-var CachedFilePath = fmt.Sprintf("%s.html", month)
+var CachedFilePath = fmt.Sprintf("%s/%s.html", CacheDirectory, month)
 
-func isFileCached() bool {
-	if _, err := os.Stat(CachedFilePath); !os.IsNotExist(err) {
-		return true
-	}
-	return false
-}
-
-func main() {
-	if !isFileCached() {
-		log.Printf("Schedule is not cached. Loading from: %s", SmallsCalendarUrl)
-		resp, err := http.Get(SmallsCalendarUrl)
-		if err != nil {
-			log.Fatalf("Could not load url: %s", SmallsCalendarUrl)
-		}
-
-		bytes, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			log.Fatalf("Could not read bytes from response")
-		}
-
-		err = ioutil.WriteFile(CachedFilePath, bytes, 0644)
-		if err != nil {
-			log.Fatalf("Could not write HTML file")
-		}
-	} else {
-		log.Println("Schedule is cached. Loading from file...")
-	}
-
-	f, err := os.Open(CachedFilePath)
+func fileToHtmlNode(path string) *html.Node {
+	f, err := os.Open(path)
 	if err != nil {
-		log.Fatalf("Could not open file: %s", CachedFilePath)
+		log.Fatalf("Could not open file: %s", path)
 	}
 	defer f.Close()
 
 	doc, err := htmlquery.Parse(f)
 	if err != nil {
-		log.Fatalf("Could not load html from file: %s", CachedFilePath)
+		log.Fatalf("Could not load html from file: %s", path)
+	}
+	return doc
+}
+
+func fileExists(path string) bool {
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		return true
+	}
+	return false
+}
+
+func writeUrlToFile(url, path string) {
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Fatalf("Could not load url: %s", url)
 	}
 
-	// Parse days
+	bytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalf("Could not read bytes from response")
+	}
+
+	err = ioutil.WriteFile(path, bytes, 0644)
+	if err != nil {
+		log.Fatalf("Could not write HTML file")
+	}
+}
+
+func main() {
+	os.Mkdir(CacheDirectory, 0755)
+	if !fileExists(CachedFilePath) {
+		log.Printf("Schedule is not cached. Loading from: %s", SmallsCalendarUrl)
+		writeUrlToFile(SmallsCalendarUrl, CachedFilePath)
+	} else {
+		log.Println("Schedule is cached. Loading from file...")
+	}
+
+	doc := fileToHtmlNode(CachedFilePath)
+
 	days := htmlquery.Find(doc, `//section[contains(@class, "schedule")]/div[contains(@class, "day")]`)
 	log.Printf("Found %d nights with events", len(days))
 	allEvents := make(map[string][]Event)
@@ -80,6 +104,34 @@ func main() {
 		events := parseDescriptionList(data)
 		allEvents[dateString] = events
 		log.Println()
+	}
+
+	for dateString, events := range allEvents {
+		for _, event := range events {
+			s := fmt.Sprintf("%s %s", dateString, event.Time)
+			log.Println("Fetching musicians for", s)
+			h := sha1.New()
+			h.Write([]byte(s))
+			hash := hex.EncodeToString(h.Sum(nil))
+			eventUrl := fmt.Sprintf("%s%s", BaseUrl, event.Url)
+			eventPath := fmt.Sprintf("%s/%s.html", CacheDirectory, hash)
+			if !fileExists(eventPath) {
+				writeUrlToFile(eventUrl, eventPath)
+			}
+
+			doc := fileToHtmlNode(eventPath)
+			artistInfos := htmlquery.Find(doc, `//div[contains(@class, "mini-artist-info")]`)
+			log.Printf("Found info for %d artists", len(artistInfos))
+			for _, artistInfo := range artistInfos {
+				m := Musician{
+					Name:       htmlquery.FindOne(artistInfo, `//h2[contains(@class, "mini-artist-info__title")]`).FirstChild.FirstChild.Data,
+					Instrument: htmlquery.FindOne(artistInfo, `//p[contains(@class, "mini-artist-info__instrument")]`).FirstChild.Data,
+					Bio:        htmlquery.FindOne(artistInfo, `//p[contains(@class, "mini-artist-info__bio")]`).FirstChild.Data,
+				}
+				log.Println("Musician =", m)
+				event.Musicians = append(event.Musicians, m)
+			}
+		}
 	}
 }
 
