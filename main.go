@@ -72,17 +72,20 @@ func main() {
 	// Parse days
 	days := htmlquery.Find(doc, `//section[contains(@class, "schedule")]/div[contains(@class, "day")]`)
 	log.Printf("Found %d nights with events", len(days))
+	allEvents := make(map[string][]Event)
 	for _, day := range days {
-		dateString := htmlquery.FindOne(day, "//h2")
-		log.Println(dateString.FirstChild.Data)
+		dateString := htmlquery.FindOne(day, "//h2").FirstChild.Data
+		log.Println(dateString)
 		data := htmlquery.Find(day, "//dl/*")
-		parseDescriptionList(data)
+		events := parseDescriptionList(data)
+		allEvents[dateString] = events
 		log.Println()
 	}
 }
 
 // parse <dl> description list
-func parseDescriptionList(data []*html.Node) {
+func parseDescriptionList(data []*html.Node) []Event {
+	var events []Event
 	// Split slice into chunks of 2, since format is <dt>Sunday</dt><dd>Event details</dd>
 	var divided [][]*html.Node
 	chunkSize := 2
@@ -116,5 +119,7 @@ func parseDescriptionList(data []*html.Node) {
 		}
 		event.Url = href
 		log.Println(event)
+		events = append(events, event)
 	}
+	return events
 }
