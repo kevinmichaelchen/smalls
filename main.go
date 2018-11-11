@@ -98,7 +98,7 @@ func persistEvents(allEvents map[string][]*Event) {
 		}
 
 		dayJsonFilename := getJsonFilename(dateString)
-		dayJsonPath := fmt.Sprintf("%s/%s.html", JsonCacheDirectory, dayJsonFilename)
+		dayJsonPath := fmt.Sprintf("%s/%s.json", JsonCacheDirectory, dayJsonFilename)
 		if !FileExists(dayJsonPath) {
 			b, err := json.Marshal(allEvents[dateString])
 			if err != nil {
