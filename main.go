@@ -69,7 +69,7 @@ func main() {
 
 // persistEvents scrapes each event detail page, persists the HTML for it (if not persisted already),
 // and writes the JSON for the event to disk.
-func persistEvents(allEvents map[string][]Event) {
+func persistEvents(allEvents map[string][]*Event) {
 	for dateString, events := range allEvents {
 		for _, event := range events {
 			s := fmt.Sprintf("%s %s", dateString, event.Time)
@@ -123,10 +123,10 @@ func getJsonFilename(dateString string) string {
 }
 
 // parseEventsForMonth parses up to 2 weeks worth of events for the current month
-func parseEventsForMonth(doc *html.Node) map[string][]Event {
+func parseEventsForMonth(doc *html.Node) map[string][]*Event {
 	days := htmlquery.Find(doc, `//section[contains(@class, "schedule")]/div[contains(@class, "day")]`)
 	log.Printf("Found %d nights with events", len(days))
-	allEvents := make(map[string][]Event)
+	allEvents := make(map[string][]*Event)
 	for _, day := range days {
 		dateString := htmlquery.FindOne(day, "//h2").FirstChild.Data
 		log.Println(dateString)
@@ -142,8 +142,8 @@ func parseEventsForMonth(doc *html.Node) map[string][]Event {
 // Chunks consist of 2 consecutive elements, a <dt> and a <dd> element.
 // The <dt> element contains the event time, e.g., 10:30 PM - 1:00 AM
 // The <dd> element contains the event name and URL.
-func parseDescriptionList(data []*html.Node) []Event {
-	var events []Event
+func parseDescriptionList(data []*html.Node) []*Event {
+	var events []*Event
 	// Split slice into chunks of 2, since format is <dt>Sunday</dt><dd>Event details</dd>
 	var divided [][]*html.Node
 	chunkSize := 2
@@ -177,7 +177,7 @@ func parseDescriptionList(data []*html.Node) []Event {
 		}
 		event.Url = href
 		log.Println(event)
-		events = append(events, event)
+		events = append(events, &event)
 	}
 	return events
 }
