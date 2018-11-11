@@ -1,12 +1,13 @@
 package main
 
 import (
-	"github.com/antchfx/htmlquery"
-	"golang.org/x/net/html"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/antchfx/htmlquery"
+	"golang.org/x/net/html"
 )
 
 func FileToHtmlNode(path string) *html.Node {

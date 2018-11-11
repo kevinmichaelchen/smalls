@@ -5,22 +5,25 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/net/html"
 	"log"
 	"os"
 	"time"
+
+	"golang.org/x/net/html"
 
 	"github.com/antchfx/htmlquery"
 )
 
 const CacheDirectory = "cache"
+const HtmlCacheDirectory = CacheDirectory + "/html"
+const JsonCacheDirectory = CacheDirectory + "/json"
 const BaseUrl = "https://www.smallslive.com"
 const SmallsCalendarUrl = "https://www.smallslive.com/events/calendar/"
 
 var month = time.Now().Month().String()
 
 // TODO schedule only shows 2 weeks at a time. name should be something like 11-10-2018_11-23-2018.html
-var CachedFilePath = fmt.Sprintf("%s/%s.html", CacheDirectory, month)
+var SchedulePath = fmt.Sprintf("%s/%s.html", HtmlCacheDirectory, month)
 
 type Musician struct {
 	Name       string
@@ -48,15 +51,16 @@ func (e Event) String() string {
 }
 
 func main() {
-	os.Mkdir(CacheDirectory, 0755)
-	if !FileExists(CachedFilePath) {
+	os.MkdirAll(HtmlCacheDirectory, 0755)
+	os.MkdirAll(JsonCacheDirectory, 0755)
+	if !FileExists(SchedulePath) {
 		log.Printf("Schedule is not cached. Loading from: %s", SmallsCalendarUrl)
-		WriteUrlToFile(SmallsCalendarUrl, CachedFilePath)
+		WriteUrlToFile(SmallsCalendarUrl, SchedulePath)
 	} else {
 		log.Println("Schedule is cached. Loading from file...")
 	}
 
-	doc := FileToHtmlNode(CachedFilePath)
+	doc := FileToHtmlNode(SchedulePath)
 	allEvents := parseEventsForMonth(doc)
 	persistEvents(allEvents)
 }
@@ -72,7 +76,7 @@ func persistEvents(allEvents map[string][]Event) {
 			h.Write([]byte(s))
 			hash := hex.EncodeToString(h.Sum(nil))
 			eventUrl := fmt.Sprintf("%s%s", BaseUrl, event.Url)
-			eventPath := fmt.Sprintf("%s/%s.html", CacheDirectory, hash)
+			eventPath := fmt.Sprintf("%s/%s.html", HtmlCacheDirectory, hash)
 			if !FileExists(eventPath) {
 				WriteUrlToFile(eventUrl, eventPath)
 			}
