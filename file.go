@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -37,13 +38,17 @@ func WriteUrlToFile(url, path string) {
 		log.Fatalf("Could not load url: %s", url)
 	}
 
-	bytes, err := ioutil.ReadAll(resp.Body)
+	ReaderToFile(resp.Body, path)
+}
+
+func ReaderToFile(r io.Reader, path string) {
+	bytes, err := ioutil.ReadAll(r)
 	if err != nil {
 		log.Fatalf("Could not read bytes from response")
 	}
 
 	err = ioutil.WriteFile(path, bytes, 0644)
 	if err != nil {
-		log.Fatalf("Could not write HTML file")
+		log.Fatalf("Could not write to path: %s", path)
 	}
 }

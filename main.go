@@ -5,8 +5,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"golang.org/x/net/html"
@@ -94,7 +96,30 @@ func persistEvents(allEvents map[string][]Event) {
 				log.Println(event)
 			}
 		}
+
+		dayJsonFilename := getJsonFilename(dateString)
+		dayJsonPath := fmt.Sprintf("%s/%s.html", JsonCacheDirectory, dayJsonFilename)
+		if !FileExists(dayJsonPath) {
+			b, err := json.Marshal(allEvents[dateString])
+			if err != nil {
+				log.Fatalf("Could not marshal JSON for: %s", dateString)
+			}
+			err = ioutil.WriteFile(dayJsonPath, b, 0644)
+			if err != nil {
+				log.Fatalf("Could not write to path: %s", dayJsonPath)
+			}
+		}
 	}
+}
+
+// dateString will be "Friday 11/16/2018"
+func getJsonFilename(dateString string) string {
+	var s = dateString
+	s = strings.ToLower(s)
+	// replace slashes with hyphens
+	s = strings.Replace(s, "/", "-", -1)
+	a := strings.Split(s, " ")
+	return a[1] + "_" + a[0]
 }
 
 // parseEventsForMonth parses up to 2 weeks worth of events for the current month
